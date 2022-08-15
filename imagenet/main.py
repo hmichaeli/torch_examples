@@ -259,7 +259,9 @@ def main_worker(gpu, ngpus_per_node, args):
             train_sampler.set_epoch(epoch)
 
         # train for one epoch
+        start_epoch_time =  time.time()
         train(train_loader, model, criterion, optimizer, epoch, args)
+        print("epoch time: {:6.3f}".format(time.time() - start_epoch_time))
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args)
@@ -421,7 +423,7 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
     def all_reduce(self):
-        total = torch.Tensor([self.sum, self.count], device=self.sum.device, dtype=torch.float32)
+        total = torch.FloatTensor([self.sum, self.count]).cuda(self.sum.device)
         dist.all_reduce(total, dist.ReduceOp.SUM, async_op=False)
         self.sum, self.count = total.tolist()
         self.avg = self.sum / self.count
