@@ -20,6 +20,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 from torch.utils.data import Subset
+import numpy as np
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -253,7 +254,7 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.evaluate:
         validate(val_loader, model, criterion, args)
         return
-
+    epoch_times = []
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
@@ -261,7 +262,9 @@ def main_worker(gpu, ngpus_per_node, args):
         # train for one epoch
         start_epoch_time =  time.time()
         train(train_loader, model, criterion, optimizer, epoch, args)
-        print("epoch time: {:6.3f}".format(time.time() - start_epoch_time))
+        epoch_time = time.time() - start_epoch_time
+        epoch_times.append(epoch_time)
+        print("epoch time: {:6.3f}".format(epoch_time))
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args)
@@ -283,6 +286,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 'optimizer' : optimizer.state_dict(),
                 'scheduler' : scheduler.state_dict()
             }, is_best)
+    print("average epoch time: ", np.mean(epoch_times))
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
